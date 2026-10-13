@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Клеточная доска</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#080c09;--card:#0f1d16;--ink:#e2eee6;--mute:#86a392;--line:#1d3a2b;--acc:#2f9e5b;--cell:#112419;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Georgia,serif}
+main{max-width:900px;margin:0 auto;padding:12px 10px 40px}
+h1{font-size:20px;margin:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.badge{font-size:13px;padding:3px 9px;border-radius:12px;background:var(--acc);color:#fff}
+.banner{font-size:13px;color:var(--mute);border:1px dashed var(--line);border-radius:6px;padding:6px 9px;margin-bottom:8px}
+.bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+button{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
+button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.hint{color:var(--mute);font-size:14px;margin:0 0 8px}
+.gb{overflow:auto;border-radius:6px}
+.grid{display:grid;width:max-content;min-width:100%}
+.c{aspect-ratio:1;padding:0;border:1px solid var(--line);border-radius:0;background:var(--cell);display:flex;align-items:center;justify-content:center;min-width:0}
+.c.off{visibility:hidden;border:0}
+.cells .c.off{visibility:visible;background:transparent;border:1px dashed var(--line)}
+.p{width:84%;height:84%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(11px,3.4vw,20px);color:#fff;border:2px solid rgba(255,255,255,.7);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.p.me{outline:2px solid var(--acc);outline-offset:1px}
+#bd{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:18}#bd.show{display:block}
+#dr{position:fixed;top:0;right:0;bottom:0;width:min(300px,86vw);background:var(--card);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .2s;z-index:19;padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px));overflow:auto}
+#dr.open{transform:none}
+.dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.dr{display:flex;align-items:center;gap:8px;padding:7px;margin-bottom:4px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:var(--bg)}
+.dr .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr b{min-width:34px;text-align:center;color:var(--acc)}
+#dr .dr input{width:62px;padding:5px}
+.mut{color:var(--mute);font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.ov.show{display:flex}
+.sh{background:var(--card);width:100%;max-width:640px;max-height:88%;overflow:auto;border-radius:14px 14px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+.sh h3{margin:0 0 8px;font-size:18px}
+.sh h4{margin:12px 0 4px;font-size:14px;color:var(--acc)}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:6px}
+input[type=text],input[type=number]{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+input[type=color]{width:100%;height:38px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.r2{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.rw{margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed var(--line)}
+.pr{display:grid;grid-template-columns:1fr 1.4fr auto auto;gap:5px;margin-bottom:4px;align-items:center}
+.pr label{margin:0;font-size:12px;display:flex;align-items:center;gap:3px}
+.ex{display:flex;gap:5px}.ex label{flex:1;margin:0;font-size:11px}
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:240px;margin:4px 0 8px}
+.slot{border:1px solid var(--line);border-radius:6px;text-align:center;padding:2px;background:var(--bg)}
+.slot span{display:block;font-size:11px;color:var(--mute)}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+.kv b{text-align:right;font-weight:600}
+.btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.pill{display:flex;gap:5px;overflow-x:auto;margin-bottom:8px}.pill button{flex:none;padding:4px 10px}
+#cm{height:46vh;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);margin-bottom:8px}
+.m{margin-bottom:6px}.m small{color:var(--mute)}.m.me{text-align:right}
+.snd{display:flex;gap:6px}.snd input{flex:1}
+#tt{position:fixed;left:10px;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--acc);color:#fff;padding:10px 12px;border-radius:8px;z-index:40;display:none}
+.p.dg{touch-action:none;cursor:grab}.p.turn{box-shadow:0 0 0 3px #e0b020}.c.reach{background:rgba(224,176,32,.35)}
+select{width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.c{position:relative}.it{position:absolute;right:1px;bottom:0;font-size:11px;line-height:1}.it:only-child{position:static;font-size:clamp(12px,3.4vw,20px)}
+.sg3{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0}.sg3.six{grid-template-columns:repeat(3,1fr)}.sg3 b{font-size:14px}
+.sk{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:14px}.sk span{display:flex;justify-content:space-between;gap:6px}
+.tpn{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-bottom:8px}.tpn summary{cursor:pointer}.tr{display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:6px}
+textarea{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.kv b{max-width:58%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word}
+.kv[data-n]{cursor:pointer}
+#fx{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:30}#fx.show{display:flex}
+.pr{grid-template-columns:1fr 1.4fr auto auto auto}
+.dng{border-color:#d9534f;color:#ff7b77}
+</style></head>
+<body><main>
+<div class="top"><h1>Клеточная доска</h1><span class="badge" id="role">…</span></div>
+<div class="banner" id="demo" hidden>Демо-режим: данные не сохраняются. В опубликованной версии включается общая база.</div>
+<div id="boardv"><p class="hint" id="st" style="color:var(--acc);margin-bottom:2px"></p><p class="hint" id="hint"></p>
+<div id="tp"></div><div class="gb"><div class="grid" id="grid"></div></div><div class="bar" id="bar" style="margin-top:10px"></div></div><div id="menu" hidden></div>
+</main>
+<div id="bd" onclick="setDr(false)"></div>
+<aside id="dr"><div class="dh"><b>Инициатива</b><button onclick="setDr(false)">✕</button></div><div id="pl"></div></aside>
+<div class="ov" id="ov"><div class="sh" id="sh"></div></div>
+<div id="fx" onclick="if(event.target===this)closeFx()"></div><div id="tt"></div>
+<div id="fbgate" style="display:none;position:fixed;inset:0;z-index:100;background:#080c09;color:#e2eee6;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:17px Georgia,serif;text-align:center;padding:20px"><div style="font-size:22px">Клеточная доска</div><button id="fbbtn" style="padding:10px 20px;font:inherit;border-radius:8px;border:1px solid #2f9e5b;background:#2f9e5b;color:#fff">Войти через Google</button><div id="fbmsg" style="color:#ff7b77;font-size:14px;max-width:320px"></div></div>
+<script src="config.js"></script>
+<script>
+(function(){
+const B='https://www.gstatic.com/firebasejs/10.14.1/',$=id=>document.getElementById(id);let doLogin=()=>{};
+const fb=(async()=>{
+  const c=window.FIREBASE_CONFIG;
+  if(!c||!c.apiKey||c.apiKey==='ВСТАВЬТЕ'){$('fbgate').style.display='flex';$('fbbtn').style.display='none';$('fbmsg').textContent='Не заполнен файл config.js';return null}
+  const [A,F,Au]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-firestore.js'),import(B+'firebase-auth.js')]);
+  const app=A.initializeApp(c),fdb=F.initializeFirestore(app,{ignoreUndefinedProperties:true}),auth=Au.getAuth(app);
+  doLogin=()=>Au.signInWithPopup(auth,new Au.GoogleAuthProvider()).catch(e=>{$('fbmsg').textContent='Ошибка входа: '+e.code});
+  const user=await new Promise(res=>{let done=0;Au.onAuthStateChanged(auth,u=>{if(u&&!done){done=1;$('fbgate').style.display='none';res(u)}else if(!u)$('fbgate').style.display='flex'})});
+  const em=(user.email||'').toLowerCase(),adm=(window.ADMIN_EMAIL||'').toLowerCase();
+  const deny=()=>{$('fbgate').style.display='flex';$('fbbtn').style.display='none';$('fbmsg').textContent='Нет доступа. Попросите ведущего добавить вашу почту: '+em};
+  const db={collection:n=>({onSnapshot:(cb,er)=>F.onSnapshot((n==='chat'||n==='log')?F.query(F.collection(fdb,n),F.orderBy('t','desc'),F.limit(150)):F.collection(fdb,n),cb,e=>{deny();if(er)er(e)})}),
+    doc:p=>({set:d=>F.setDoc(F.doc(fdb,p),d),delete:()=>F.deleteDoc(F.doc(fdb,p))})};
+  const u={isOwner:async()=>em===adm,id:async()=>user.uid,me:async()=>({name:user.displayName||user.email})};
+  return{db,u}})();
+$('fbbtn').onclick=()=>doLogin();
+window.claude={use:async n=>{const x=await fb;return x?(n==='db'?x.db:n==='user'?x.u:null):null}};
+})();
+</script>
+<script>
+const SEC={params:'Параметры',abil:'Способности',spells:'Заклинания',inv:'Инвентарь'};
+const secs=col=>col==='players'?['params','abil','spells','inv']:['params','abil'];
+let tool=null,E=null,db=null,isOwner=false,myId=null,realOwner=false,realId=null,testing=null,myName='Игрок',demo=true,cfg={w:10,h:10,off:[]};
+const S={pieces:{},players:{},stats:{},secrets:{},board:{},log:{},members:{},chat:{},items:{},turn:{},roster:{},sess:{}};let chatOpen=false,chatTo='all',ed=null,LD={},tried={},clearing=false;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const all=()=>[...Object.entries(S.pieces).map(([id,d])=>({col:'pieces',id,...d})),...Object.entries(S.players).map(([id,d])=>({col:'players',id,...d}))];
+const isOn=(x,y)=>x<cfg.w&&y<cfg.h&&!cfg.off.includes(x+','+y);
+const canEdit=p=>isOwner||(p.col==='players'&&p.id===myId);
+const colOf=id=>S.pieces[id]?'pieces':'players';
+const clone=o=>JSON.parse(JSON.stringify(o));
+async function put(col,id,d){S[col][id]=d;if(col==='board'&&id==='cfg')cfg={w:d.w,h:d.h,off:d.off||[]};render();if(isOwner&&(col==='stats'||col==='players'))rosterQ(id);if(db){try{await db.doc(col+'/'+id).set(d)}catch(e){toast('Нет прав на запись: '+(e.message||e.code))}}}
+async function rm(col,id){const cs=[col];if(isOwner)cs.push('stats','secrets');cs.forEach(c=>delete S[c][id]);render();if(db)for(const c of cs){try{await db.doc(c+'/'+id).delete()}catch(e){}}}
+function sub(col){db.collection(col).onSnapshot(s=>{S[col]={};s.docs.forEach(d=>S[col][d.id]=d.data());if(col==='board'&&S.board.cfg){const b=S.board.cfg;cfg={w:b.w,h:b.h,off:b.off||[]}}LD[col]=1;if(col==='chat')chatNotify();else render();restoreStats()},()=>{})}
+function setDr(v){$('dr').classList.toggle('open',v);$('bd').classList.toggle('show',v)}
+function render(){render0();if(chatOpen||menuOn())renderChat()}
+function render0(){
+  $('role').textContent=testing?'Тест: '+((S.players[testing]||{}).name||''):isOwner?'Админ':(myId?'Игрок':'Гость');$('demo').hidden=!demo;{const mo=menuOn(),m=$('menu');$('boardv').hidden=mo;m.hidden=!mo;if(mo){renderMenu();return}if(m.dataset.init){m.innerHTML='';delete m.dataset.init}}$('st').textContent=turnLabel();renderTP();
+  const ps=all();let b=`<button onclick="setDr(true)">Список (${ps.length})</button><button onclick="showLog()">Журнал</button><button onclick="showChat()">Чаты${unTot()?' ('+unTot()+')':''}</button>${isOwner?`<button onclick="nextTurn()">Ход ▶</button><button class="${tool==='item'?'on':''}" onclick="setTool('item')">＋ Предмет</button><button class="${tool==='pl'?'on':''}" onclick="setTool('pl')">＋ Тест-игрок</button><button onclick="showRoster()">База игроков</button><button class="dng" onclick="clearBoard()">Очистить доску</button><button class="dng" onclick="exitBoard()">Выйти</button>`:''}`;
+  if(isOwner)b+=`<button class="${tool==='piece'?'on':''}" onclick="setTool('piece')">＋ Фишка</button><button class="${tool==='cells'?'on':''}" onclick="boardEd()">Доска</button>`;
+  if((myId||demo)&&!S.players[myId||'demo'])b+=`<button class="${tool==='me'?'on':''}" onclick="setTool('me')">${S.players[myId||'demo']?'Моя фишка: переместить':'＋ Моя фишка'}</button>`;
+  if(realOwner)b+=`<button class="${testing?'on':''}" onclick="testMode()">${testing?'Выйти из теста':'Режим игрока'}</button>`;$('bar').innerHTML=b;
+  $('hint').textContent=tool==='cells'?'Нажимайте клетки, чтобы убрать или вернуть. Кнопка «Доска» — выход.':tool?'Нажмите на пустую клетку.':'Нажмите на фишку, чтобы узнать данные.';
+  let g='';
+  for(let y=0;y<cfg.h;y++)for(let x=0;x<cfg.w;x++){
+    if(!isOn(x,y)){g+=`<button class="c off" data-x="${x}" data-y="${y}"></button>`;continue}
+    const p=ps.find(q=>q.x==x&&q.y==y);
+    g+=`<button class="c" data-x="${x}" data-y="${y}">${p?`<span class="p${p.col==='players'&&p.id===myId?' me':''}${canDrag(p)?' dg':''}${p.id===trn().id?' turn':''}" style="background:${esc(p.color||'#8c2f39')}">${esc(p.emoji||(p.name||'?')[0])}</span>`:''}${itemMark(x,y)}</button>`}
+  const gr=$('grid');gr.className='grid'+(tool==='cells'?' cells':'');gr.style.gridTemplateColumns=`repeat(${cfg.w},minmax(24px,1fr))`;gr.innerHTML=g;
+  const ini=p=>(S.stats[p.id]||{}).ini;
+  const ls=ord();
+  $('pl').innerHTML=ls.length?ls.map(p=>`<div class="dr" onclick="showP('${p.col}','${esc(p.id)}')">${isOwner?`<input type="number" placeholder="иниц." value="${ini(p)??''}" onclick="event.stopPropagation()" onchange="setIni('${esc(p.id)}',this.value)">`:`<b>${ini(p)??'—'}</b>`}<span class="n">${p.id===trn().id?'▶ ':''}${esc(p.emoji||'')} ${esc(p.name)}</span></div>`).join(''):'<span class="mut">Фишек пока нет.</span>';
+}
+function setIni(id,v){const st=clone(S.stats[id]||{sec:{}});st.ini=v===''?null:+v;put('stats',id,st)}
+function setTool(t){tool=tool===t?null:t;render()}
+$('grid').onclick=e=>{const c=e.target.closest('.c');if(!c)return;const x=+c.dataset.x,y=+c.dataset.y,k=x+','+y;
+  if(tool==='cells'){const o=cfg.off.includes(k)?cfg.off.filter(v=>v!==k):[...cfg.off,k];put('board','cfg',{w:cfg.w,h:cfg.h,off:o});return}
+  if(!isOn(x,y))return;
+  const p=all().find(q=>q.x==x&&q.y==y);
+  if(tool==='item'&&isOwner){editItem(null,x,y);return}
+  if(p){tool=null;showP(p.col,p.id);return}
+  if(!tool&&itemsAt(x,y).length){showCell(x,y);return}
+  if(tool==='piece')edit('pieces',null,x,y);else if(tool==='me')edit('players',myId||'demo',x,y);else if(tool==='pl'&&isOwner){edit('players','t'+Date.now().toString(36),x,y);E.test=true}};
+const openS=h=>{chatOpen=false;ed=null;$('sh').innerHTML=h;$('ov').classList.add('show')};
+const closeS=()=>{flushAuto();chatOpen=false;ed=null;$('ov').classList.remove('show')};
+$('ov').onclick=e=>{if(e.target===$('ov'))closeS()};
+function boardEd(){
+  if(tool==='cells'){tool=null;render();return}
+  openS(`<h3>Доска</h3><div class="r2" style="grid-template-columns:1fr 1fr"><label>Ширина (1–30)<input type="number" id="b-w" min="1" max="30" value="${cfg.w}" onchange="applyB(1)"></label><label>Высота (1–30)<input type="number" id="b-h" min="1" max="30" value="${cfg.h}" onchange="applyB(1)"></label></div>
+  <div class="btns"><button class="on" onclick="applyB()">Применить размер</button><button onclick="tool='cells';closeS();render()">Убирать клетки</button><button onclick="put('board','cfg',{w:cfg.w,h:cfg.h,off:[]});closeS()">Вернуть все клетки</button><button onclick="closeS()">Закрыть</button></div>`);
+}
+function applyB(auto){const c=v=>Math.min(30,Math.max(1,parseInt(v)||1));const w=c($('b-w').value),h=c($('b-h').value);
+  put('board','cfg',{w,h,off:cfg.off.filter(k=>{const[a,b]=k.split(',');return a<w&&b<h})});if(!auto)closeS()}
+function slotsHTML(st){const a=st.sl||[],m=st.slm||[];return '<div class="sg">'+[...Array(9)].map((_,i)=>`<div class="slot"><span>${i+1} круг</span><b>${a[i]||0}/${m[i]||0}</b></div>`).join('')+'</div>'}
+function itemHTML(id,k,i,s,x){
+  const meta=k==='abil'?`использовано ${i.u||0}${i.m?' из '+i.m:''}`+(actKey(i)?' · '+AL[actKey(i)]:''):k==='spells'?[i.lvl?i.lvl+' круг':'заговор',AL[actKey(i,1)],i.rng&&'дальность: '+i.rng,i.dur&&'длительность: '+i.dur].filter(Boolean).join(' · '):'';
+  const q=`'${esc(id)}',${s},${x}`;
+  const btn=isOwner?(k==='abil'?`<button onclick="useAb(${q},1)">＋1</button><button onclick="useAb(${q},0)">Сброс</button>`:k==='spells'?`<button onclick="useSp(${q})">Применить</button>`:''):'';
+  return `<div class="kv" data-n="${esc(i.n)}" data-v="${esc(i.v)}" onclick="fullView(this)"><span>${esc(i.n)}${s?' <span class="mut">(скрыто)</span>':''}${meta?`<br><span class="mut">${esc(meta)}</span>`:''}</span><b>${esc(i.v)}</b></div>${btn?`<div class="btns" style="margin:2px 0 6px">${btn}</div>`:''}`}
+function useAb(id,s,x,inc){const c=s?'secrets':'stats';
+  if(inc){const a0=S[c][id].sec.abil[x];if(a0.m>0&&(a0.u||0)>=a0.m){toast('Лимит использований исчерпан');return}if(!spend(id,actKey(a0)))return}
+  const doc=clone(S[c][id]),a=doc.sec.abil[x];
+  if(inc){a.u=(a.u||0)+1;roll(id,a)}else a.u=0;
+  put(c,id,doc);showP(colOf(id),id)}
+function useSp(id,s,x){const sp=S[s?'secrets':'stats'][id].sec.spells[x],l=sp.lvl||0;
+  if(l>0&&((S.stats[id].sl||[])[l-1]||0)<=0){toast('Нет ячеек '+l+' круга');return}
+  if(!spend(id,actKey(sp,1)))return;
+  if(l>0){const st=clone(S.stats[id]);st.sl[l-1]--;put('stats',id,st)}
+  roll(id,sp);showP(colOf(id),id)}
+function showP(col,id){
+  const d=S[col][id];if(!d)return;setDr(false);
+  const st=S.stats[id]||{},pub=st.sec||{},pr=isOwner&&col==='pieces'?(S.secrets[id]||{}).sec||{}:{};
+  let h=`<h3>${esc(d.emoji||'')} ${esc(d.name)}${st.ini!=null?` <span class="mut">· иниц. ${st.ini}</span>`:''}</h3>`,any=0;if(col==='players')h+=actHTML(id,st)+sheetHTML(st.sh);
+  secs(col).forEach(k=>{const L=[...(pub[k]||[]).map((i,x)=>[i,0,x]),...(pr[k]||[]).map((i,x)=>[i,1,x])];
+    if(!L.length)return;any=1;h+=`<h4>${SEC[k]}</h4>`+(k==='spells'?slotsHTML(st):'')+L.map(([i,s,x])=>itemHTML(id,k,i,s,x)).join('')});
+  const ia=itemsAt(d.x,d.y);if(ia.length){any=1;h+='<h4>Предметы в клетке</h4>'+ia.map(i=>`<div class="kv" data-n="${esc(i.n)}" data-v="${esc(i.v)}" onclick="fullView(this)"><span>${esc(i.emoji||'🎁')} ${esc(i.n)}</span><b>${esc(i.v)}</b></div>`).join('')}
+  if(!any)h+='<p class="mut">Нет открытых данных.</p>';
+  openS(h+`<div class="btns">${canEdit({col,id})?`<button onclick="edit('${col}','${esc(id)}')">Изменить</button><button onclick="del('${col}','${esc(id)}')">Удалить</button>`:''}<button onclick="closeS()">Закрыть</button></div>`);
+}
+const sel=(k,v)=>`<label>Действие<select>${(k==='abil'?[['','—'],['д','Д'],['бд','БД']]:[['','Авто'],['д','Д'],['бд','БД']]).map(([a,b])=>`<option value="${a}"${v===a?' selected':''}>${b}</option>`).join('')}</select></label>`;
+const row=(k,i,vis)=>`<div class="rw"${i.src?' data-s="1"':''}><div class="pr"><input type="text" placeholder="Название" value="${esc(i.n)}"><input type="text" placeholder="Описание" value="${esc(i.v)}"><button onclick="rowFull(this)">⤢</button><label${E&&E.col==='players'?' style="display:none"':''}><input type="checkbox" ${vis||(E&&E.col==='players')?'checked':''}>вид.</label><button onclick="this.closest('.rw').remove();autoSave()">×</button></div>`
+ +(k==='abil'?`<div class="ex"><label>Использовано<input type="number" min="0" value="${i.u||0}"></label><label>Максимум (0 — без лимита)<input type="number" min="0" value="${i.m||0}"></label>${sel(k,i.act||'')}</div>`
+ :k==='spells'?`<div class="ex"><label>Дальность<input type="text" value="${esc(i.rng)}"></label><label>Длительность<input type="text" value="${esc(i.dur)}"></label><label>Круг 0–9<input type="number" min="0" max="9" value="${i.lvl??1}"></label>${sel(k,i.act||'')}</div>`:'')+'</div>';
+const addRow=k=>{$('s-'+k).insertAdjacentHTML('beforeend',row(k,{n:'',v:''},1));autoSave()};
+function edit(col,id,x,y){
+  const d=id?(S[col][id]||{}):{};E={col,id,x:x??d.x??0,y:y??d.y??0};
+  const st=(id&&S.stats[id])||{};let s='';
+  if(isOwner){const pub=st.sec||{},pr=(id&&S.secrets[id]||{}).sec||{};if(col==='players')s+=sheetEd(st.sh||{});
+    secs(col).forEach(k=>{s+=`<h4>${SEC[k]}</h4><div id="s-${k}">${(pub[k]||[]).map(i=>row(k,i,1)).join('')+(pr[k]||[]).map(i=>row(k,i,0)).join('')}</div><button onclick="addRow('${k}')">＋ добавить</button>`});
+    if(col==='players'){const g=(p,a)=>`<div class="sg">${[...Array(9)].map((_,i)=>`<label>${i+1}<input type="number" min="0" id="${p}${i}" value="${(a||[])[i]||0}"></label>`).join('')}</div>`;
+      s+=`<h4>Ячейки заклинаний</h4><div class="mut">Осталось (круги 1–9)</div>${g('sl',st.sl)}<div class="mut">Максимум</div>${g('sm',st.slm)}`}}
+  openS(`<h3>${d.name?'Изменить':'Новая фишка'}<span class="mut" id="svd" style="font-size:12px;font-weight:normal"></span></h3>
+  <label>Название<input type="text" id="e-n" value="${esc(d.name||(col==='players'?myName:''))}"></label>
+  <div class="r2"><label>Значок<input type="text" id="e-e" maxlength="2" value="${esc(d.emoji||'')}"></label><label>Цвет<input type="color" id="e-c" value="${esc(d.color||'#8c2f39')}"></label>${isOwner||!d.name?`<label>X<input type="number" id="e-x" min="1" max="${cfg.w}" value="${E.x+1}"></label><label>Y<input type="number" id="e-y" min="1" max="${cfg.h}" value="${E.y+1}"></label>`:`<input type="hidden" id="e-x" value="${E.x+1}"><input type="hidden" id="e-y" value="${E.y+1}">`}</div>
+  ${isOwner?`<label>Инициатива (список по убыванию)<input type="number" id="e-i" value="${st.ini??''}"></label>`:''}
+  ${s}${isOwner&&col==='pieces'?'<p class="mut">Галочка «вид.»: игроки видят пункт. Без неё — только вы.</p>':''}
+  <div class="btns"><button class="on" onclick="closeS()">Готово</button></div>`);ed='tok';if($('h-a0'))modUI();
+}
+function saveE(auto){if(auto&&!$('e-n').value.trim())return;
+  const cl=(v,m)=>Math.min(m,Math.max(1,parseInt(v)||1))-1,x=cl($('e-x').value,cfg.w),y=cl($('e-y').value,cfg.h);
+  if(!isOn(x,y)){if(!auto)toast('Эта клетка убрана с доски.');return}
+  const d={name:$('e-n').value.trim()||'Без имени',emoji:$('e-e').value,color:$('e-c').value,x,y};if(E.test||(S[E.col][E.id]||{}).test)d.test=true;
+  const id=E.id||'p'+Date.now().toString(36);E.id=id;put(E.col,id,d);
+  if(isOwner){const pub={},pr={},n0=v=>Math.max(0,parseInt(v)||0);
+    secs(E.col).forEach(k=>{pub[k]=[];pr[k]=[];document.querySelectorAll('#s-'+k+' .rw').forEach(r=>{const i=r.querySelectorAll('.pr input'),z=r.querySelectorAll('.ex input,.ex select'),n=i[0].value.trim();if(!n)return;const it={n,v:i[1].value};if(r.dataset.s)it.src=1;
+      if(k==='abil'){it.u=n0(z[0].value);it.m=n0(z[1].value);it.act=z[2].value}
+      if(k==='spells'){it.rng=z[0].value;it.dur=z[1].value;it.lvl=Math.min(9,n0(z[2].value));it.act=z[3].value}
+      (i[2].checked?pub:pr)[k].push(it)})});
+    const st=clone(S.stats[id]||{});st.sec=pub;st.ini=$('e-i').value===''?null:+$('e-i').value;
+    if(E.col==='players'){st.sh=readSheet();st.sl=[...Array(9)].map((_,i)=>n0($('sl'+i).value));st.slm=[...Array(9)].map((_,i)=>n0($('sm'+i).value))}
+    put('stats',id,st);put('secrets',id,{sec:pr})}
+  if(auto){const e=$('svd');if(e)e.textContent=' · сохранено ✓'}else{tool=null;closeS()}
+}
+function del(col,id){ask('Удалить?').then(ok=>{if(ok){rm(col,id);closeS()}})}
+const RX=/(^|[^A-Za-zА-Яа-я0-9])(?:(\d{1,3})\s?[кkdдКKDД]\s?|[dD]\s?)(\d{1,4})(?!\d)/g;
+function toast(t){const e=$('tt');e.textContent=t;e.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display='none',7000)}
+function roll(id,it){const out=[];(it.v||'').replace(RX,(m,p,a,b)=>{const n=Math.min(100,+a||1),M=+b;if(M<1)return;const r=[...Array(n)].map(()=>1+Math.floor(Math.random()*M));out.push(`${n}к${M}: ${r.join('+')}${n>1?' = '+r.reduce((x,y)=>x+y):''}`)});
+  if(!out.length)return;const t=out.join('; ');put('log','l'+Date.now().toString(36),{t:Date.now(),who:(S.pieces[id]||S.players[id]||{}).name||'',what:it.n,text:t});toast(it.n+': '+t)}
+const hm=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+function showLog(){const L=Object.values(S.log).sort((a,b)=>b.t-a.t).slice(0,40);openS('<h3>Журнал бросков</h3>'+(L.map(e=>`<div class="kv"><span>${esc(e.who)} · ${esc(e.what)}<br><span class="mut">${hm(e.t)}</span></span><b>${esc(e.text)}</b></div>`).join('')||'<p class="mut">Бросков пока нет.</p>')+'<div class="btns"><button onclick="closeS()">Закрыть</button></div>')}
+function showChat(){setDr(false);openS('<h3>Чаты</h3><div class="pill" id="cp"></div><div id="cm"></div><div class="snd"><input type="text" id="ci" placeholder="Сообщение" onkeydown="if(event.key===\'Enter\')sendM()"><button class="on" onclick="sendM()">➤</button></div><div class="btns"><button onclick="closeS()">Закрыть</button></div>');chatOpen=true;render()}
+function renderChat(){unread[chatTo]=0;lrSet(chatTo);const me=myId||'demo',mem=Object.entries(S.members).filter(([id])=>id!==me);
+  $('cp').innerHTML=`<button class="${chatTo==='all'?'on':''}" onclick="chatTo='all';render()">Общий${un('all')}</button>`+mem.map(([id,m])=>`<button class="${chatTo===id?'on':''}" onclick="chatTo='${esc(id)}';render()">${esc(m.name)}${un(id)}</button>`).join('');
+  const ms=Object.values(S.chat).filter(m=>chatTo==='all'?m.to==='all':(m.from===me&&m.to===chatTo)||(m.from===chatTo&&m.to===me)).sort((a,b)=>a.t-b.t);
+  const bx=$('cm'),end=bx.scrollTop+bx.clientHeight>=bx.scrollHeight-20;
+  bx.innerHTML=ms.map(m=>`<div class="m${m.from===me?' me':''}"><small>${esc(m.name)} · ${hm(m.t)}</small><br>${esc(m.text)}</div>`).join('')||'<span class="mut">Сообщений нет.</span>';
+  if(end)bx.scrollTop=bx.scrollHeight}
+function sendM(){const i=$('ci'),t=i.value.trim();if(!t)return;const ts=Date.now();put('chat','m'+ts.toString(36)+Math.random().toString(36).slice(2,5),{from:myId||'demo',name:myName,to:chatTo,t:ts,text:t});i.value=''}
+const AL={a:'Действие',b:'Бонусное действие'};
+const nrm=s=>String(s||'').toLowerCase().replace(/ё/g,'е').trim();
+const BD=new Set(['branding smite','клеймящая кара','compelled duel','принудительная дуэль','принуждённая дуэль','divine favor','божественное благоволение','божественная милость','ensnaring strike','опутывающий удар','захватывающий удар','expeditious retreat','поспешное отступление','flame blade','пылающий клинок','пламенный клинок','hail of thorns','град шипов','healing word','лечащее слово','mass healing word','массовое лечащее слово','hex','сглаз','hunter\'s mark','метка охотника','magic weapon','магическое оружие','волшебное оружие','misty step','туманный шаг','searing smite','палящая кара','shield of faith','щит веры','spiritual weapon','духовное оружие','sanctuary','убежище','святилище','shillelagh','дубинка','thunderous smite','громовая кара','wrathful smite','гневная кара','swift quiver','быстрый колчан','zephyr strike','удар зефира','lightning arrow','молниеносная стрела'].map(nrm));
+const RE=new Set(['absorb elements','поглощение стихий','counterspell','контрзаклинание','feather fall','падение пера','падение пёрышком','hellish rebuke','адское возмездие','адский упрек','shield','щит'].map(nrm));
+const lookAct=n=>BD.has(nrm(n))?'бд':'';
+const actKey=(it,sp)=>({'д':'a','бд':'b'})[(it.act||(sp&&lookAct(it.n))||(sp?'д':'')).toLowerCase()]||'';
+function spend(id,k){if(!k||colOf(id)!=='players')return true;const d=clone(S.players[id]),ac=acs(d);
+  if(ac[k]){toast('Уже потрачено: '+AL[k]+(isOwner?', применяю всё равно':''));return isOwner}
+  ac[k]=1;d.ac=ac;d.acn=trn().n;put('players',id,d);return true}
+function actHTML(id,st){const a=acs(S.players[id]||{});return '<div class="btns" style="margin:6px 0">'+['a','b'].map(k=>`<button class="${a[k]?'':'on'}"${isOwner?` onclick="togAct('${esc(id)}','${k}')"`:' disabled'}>${AL[k]}${a[k]?' ✕':' ✓'}</button>`).join('')+'</div>'}
+function togAct(id,k){const d=clone(S.players[id]),a=acs(d);a[k]=a[k]?0:1;d.ac=a;d.acn=trn().n;put('players',id,d);showP('players',id)}
+const trn=()=>S.turn.cur||{};
+const ord=()=>all().sort((a,c)=>((S.stats[c.id]||{}).ini??-1e9)-((S.stats[a.id]||{}).ini??-1e9)||(a.name||'').localeCompare(c.name||''));
+const rem=id=>{const d=S.players[id]||{};const B=d.dsh===trn().n?12:6;return d.mvt===trn().n?Math.max(0,B-(d.mv||0)):B};
+function turnLabel(){const t=trn(),p=S.pieces[t.id]||S.players[t.id];if(!p)return'';return '▶ Ход: '+p.name+(S.players[t.id]?' · осталось клеток: '+rem(t.id):'')}
+function nextTurn(){const o=ord();if(!o.length)return;const t=trn(),i=o.findIndex(p=>p.id===t.id),nx=o[(i+1)%o.length];
+  put('turn','cur',{id:nx.id,n:(t.n||0)+1});toast('Ход: '+nx.name)}
+const canDrag=p=>isOwner||(p.col==='players'&&p.id===myId&&trn().id===myId&&rem(myId)>0);
+function bfs(p,max){const occ=new Set(all().filter(q=>q.id!==p.id).map(q=>q.x+','+q.y)),D=new Map([[p.x+','+p.y,0]]),Q=[[p.x,p.y]];
+  for(let i=0;i<Q.length;i++){const[x,y]=Q[i],d=D.get(x+','+y);if(d>=max)continue;
+    for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,k=nx+','+ny;if(nx<0||ny<0||!isOn(nx,ny)||occ.has(k)||D.has(k))continue;D.set(k,d+1);Q.push([nx,ny])}}
+  return D}
+function freeCells(p){const occ=new Set(all().filter(q=>q.id!==p.id).map(q=>q.x+','+q.y)),D=new Map();
+  for(let y=0;y<cfg.h;y++)for(let x=0;x<cfg.w;x++)if(isOn(x,y)&&!occ.has(x+','+y))D.set(x+','+y,1);return D}
+let dg=null;
+$('grid').addEventListener('pointerdown',e=>{const sp=e.target.closest('.p.dg');if(!sp||tool)return;const c=sp.closest('.c');
+  const p=all().find(q=>q.x==+c.dataset.x&&q.y==+c.dataset.y);if(!p)return;
+  const D=isOwner?freeCells(p):bfs(p,rem(p.id)),w=sp.offsetWidth,g=sp.cloneNode(true);
+  g.style.cssText=`position:fixed;pointer-events:none;width:${w}px;height:${w}px;z-index:50;opacity:.85;left:${e.clientX-w/2}px;top:${e.clientY-w/2}px`;document.body.appendChild(g);
+  D.forEach((v,k)=>{const[a,b]=k.split(',');const el=$('grid').querySelector(`.c[data-x="${a}"][data-y="${b}"]`);if(el&&v>0)el.classList.add('reach')});
+  dg={p,D,g,w};e.preventDefault()});
+addEventListener('pointermove',e=>{if(!dg)return;dg.g.style.left=e.clientX-dg.w/2+'px';dg.g.style.top=e.clientY-dg.w/2+'px'});
+addEventListener('pointerup',e=>{if(!dg)return;const{p,D,g}=dg;dg=null;g.remove();document.querySelectorAll('.reach').forEach(n=>n.classList.remove('reach'));
+  const c=document.elementFromPoint(e.clientX,e.clientY),cc=c&&c.closest('.c');if(!cc||!$('grid').contains(cc))return;
+  const x=+cc.dataset.x,y=+cc.dataset.y,k=x+','+y;if(x==p.x&&y==p.y)return;
+  if(!D.has(k)){toast('Сюда нельзя: слишком далеко или клетка занята');return}
+  const d=clone(S[p.col][p.id]);d.x=x;d.y=y;
+  if(!isOwner){const t=trn();d.mv=(d.mvt===t.n?d.mv||0:0)+D.get(k);d.mvt=t.n}
+  put(p.col,p.id,d)});
+const AB=['СИЛ','ЛОВ','ТЕЛ','ИНТ','МДР','ХАР'];
+const SK=[['Акробатика',1],['Анализ',3],['Атлетика',0],['Внимательность',4],['Выживание',4],['Выступление',5],['Запугивание',5],['История',3],['Ловкость рук',1],['Магия',3],['Медицина',4],['Обман',5],['Природа',3],['Проницательность',4],['Религия',3],['Скрытность',1],['Убеждение',5],['Уход за животными',4]];
+const md=v=>Math.floor(((+v||10)-10)/2),sg=n=>(n>=0?'+':'')+n,pb=l=>2+Math.floor((Math.max(1,+l||1)-1)/4),n0=v=>Math.max(0,parseInt(v)||0);
+function sheetHTML(h){if(!h)return'';const P=pb(h.lvl),a=h.ab||[],sv=h.sv||[],sk=h.sk||[],ln=[h.cls&&h.cls+' '+(h.lvl||1)+' ур.',h.sub,h.race,h.bg,h.al].filter(Boolean).join(' · ');
+  const t=[['КД',h.ac],['Скорость',h.spd],['Хиты',`${h.hp||0}/${h.hpm||0}${h.hpt?' +'+h.hpt:''}`],['Кость хитов',h.hd],['Мастерство',sg(P)],['Инициатива',sg(md(a[1]))],['Пасс. вним.',10+md(a[4])+(sk[3]?P:0)]];
+  return `<div class="mut">${esc(ln)}</div><div class="sg3">${t.map(([k,v])=>`<div class="slot"><span>${k}</span><b>${esc(v||'—')}</b></div>`).join('')}</div>`
+  +`<div class="sg3 six">${AB.map((n,i)=>`<div class="slot"><span>${n}</span><b>${a[i]||10} (${sg(md(a[i]))})</b><span>спас. ${sg(md(a[i])+(sv[i]?P:0))}${sv[i]?' ●':''}</span></div>`).join('')}</div>`
+  +`<div class="mut" style="margin:6px 0 2px">Навыки</div><div class="sk">${SK.map(([n,ai],i)=>`<span>${sk[i]?'● ':''}${n} <b>${sg(md(a[ai])+(sk[i]?P:0))}</b></span>`).join('')}</div>`
+  +([h.feat,h.feat2].filter(Boolean).length?`<h4>Черты</h4><p style="margin:0">${esc([h.feat,h.feat2].filter(Boolean).join(', '))}</p>`:'')}
+const CLS={
+'Варвар':{hd:12,sv:'02',su:3,ac:'bar',sp:'n',sub:['Путь берсерка','Путь тотемного воина'],f:`1|Ярость|Бонусным действием: плюс к урону Силой, сопротивление физическому урону|б
+1|Защита без доспехов|КД = 10 + ЛОВ + ТЕЛ
+2|Безрассудная атака|Преимущество на атаки Силой, но и по вам
+2|Чувство опасности|Преимущество на спасброски Ловкости от видимого
+5|Дополнительная атака|Две атаки за действие Атака
+5|Быстрое передвижение|+10 фт. к скорости без тяжёлых доспехов
+7|Звериный инстинкт|Преимущество на инициативу
+9|Жестокий критический удар|Лишняя кость урона при критическом попадании
+11|Неослабевающая ярость|При 0 хитов в ярости спасбросок ТЕЛ, чтобы остаться на ногах
+15|Непрерывная ярость|Ярость не прекращается просто так
+18|Несокрушимая мощь|Проверка Силы не ниже значения Силы
+20|Первобытный чемпион|СИЛ и ТЕЛ +4`},
+'Бард':{hd:8,sv:'15',su:3,ac:'',sp:'f',sub:['Коллегия знаний','Коллегия доблести'],f:`1|Вдохновение барда|Бонусным действием даёт союзнику кость вдохновения|б
+2|Мастер на все руки|Половина мастерства на неосвоенные проверки
+2|Песнь отдыха|Лишнее лечение на коротком отдыхе
+3|Компетентность|Двойное мастерство в двух навыках
+5|Источник вдохновения|Кость вдохновения возвращается на коротком отдыхе
+6|Контрочарование|Защита от очарования и страха себе и союзникам|д
+10|Магические секреты|Заклинания из любого списка
+20|Превосходное вдохновение|Восстановление вдохновения в начале боя`},
+'Клерик':{hd:8,sv:'45',su:1,ac:'',sp:'f',sub:['Домен знаний','Домен жизни','Домен света','Домен природы','Домен бури','Домен обмана','Домен войны'],f:`2|Божественный канал|Изгнание нежити и умение домена|д
+5|Уничтожение нежити|Изгнанная слабая нежить гибнет
+10|Божественное вмешательство|Просьба о помощи к божеству|д`},
+'Друид':{hd:8,sv:'34',su:2,ac:'',sp:'f',sub:['Круг земли','Круг луны'],f:`1|Друидический язык|Тайный язык друидов
+2|Дикий облик|Превращение в зверя дважды за отдых|д
+18|Вечное тело|Стареете втрое медленнее
+20|Архидруид|Дикий облик без ограничений`},
+'Воин':{hd:10,sv:'02',su:3,ac:'',sp:'n',sub:['Мастер боевых искусств','Чемпион','Мистический рыцарь'],f:`1|Боевой стиль|Выберите боевой стиль
+1|Второе дыхание|Бонусным действием лечение 1к10 + уровень|б
+2|Всплеск действий|Дополнительное действие в ход, раз на отдых
+5|Дополнительная атака|Две атаки за действие Атака
+9|Неукротимый|Переброс проваленного спасброска, раз на отдых
+11|Дополнительная атака (3)|Три атаки за действие Атака
+17|Всплеск действий (2)|Два раза за отдых
+20|Дополнительная атака (4)|Четыре атаки за действие Атака`},
+'Монах':{hd:8,sv:'01',su:3,ac:'mon',sp:'n',sub:['Путь открытой ладони','Путь тени','Путь четырёх стихий'],f:`1|Защита без доспехов|КД = 10 + ЛОВ + МДР
+1|Боевые искусства|Кость боевых искусств, удары Ловкостью
+2|Ки|Очки ки: шквал ударов, терпеливая защита, ступающий по ветру|б
+2|Движение без доспехов|Бонус к скорости без доспехов
+3|Отражение снарядов|Реакцией снизить урон от дальней атаки|р
+4|Падение|Реакцией снизить урон от падения|р
+5|Дополнительная атака|Две атаки за действие Атака
+5|Ошеломляющий удар|Тратя ки, оглушить цель
+6|Ки-усиленные удары|Безоружные удары магические
+7|Увёртливость|Спасбросок ЛОВ: половина или ничего
+7|Безмятежность разума|Снять очарование или страх|д
+10|Чистота тела|Иммунитет к болезням и яду
+14|Алмазная душа|Владение всеми спасбросками
+15|Вечное тело|Не стареете и не нуждаетесь в пище
+18|Пустое тело|Невидимость и сопротивление за ки
+20|Совершенное я|Ки при броске инициативы`},
+'Паладин':{hd:10,sv:'45',su:3,ac:'',sp:'h',sub:['Клятва преданности','Клятва древних','Клятва мщения'],f:`1|Божественное чувство|Чувствуете небожителей, исчадий и нежить|д
+1|Возложение рук|Запас лечения 5 × уровень хитов|д
+2|Боевой стиль|Выберите боевой стиль
+2|Божественная кара|Трата ячейки для урона излучением
+3|Божественное здоровье|Иммунитет к болезням
+5|Дополнительная атака|Две атаки за действие Атака
+6|Аура защиты|Бонус ХАР к спасброскам вам и союзникам рядом
+10|Аура отваги|Иммунитет к страху вам и союзникам рядом
+11|Улучшенная кара|+1к8 излучения ко всем атакам ближнего боя
+14|Очищающее касание|Снять заклинание с существа|д`},
+'Следопыт':{hd:10,sv:'01',su:3,ac:'',sp:'h',sub:['Охотник','Повелитель зверей'],f:`1|Избранный враг|Преимущество на выслеживание и знания о типе врага
+1|Исследователь природы|Преимущества в избранной местности
+2|Боевой стиль|Выберите боевой стиль
+3|Первобытная осведомлённость|Чувство присутствия существ
+5|Дополнительная атака|Две атаки за действие Атака
+8|Хождение по земле|Игнорирует трудную местность
+10|Скрытность на виду|Маскировка в окружении
+14|Исчезновение|Прятаться бонусным действием|б
+18|Звериные чувства|Нет помех от невидимых врагов
+20|Убийца врагов|Бонус к атаке или урону по избранному врагу`},
+'Плут':{hd:8,sv:'13',su:3,ac:'',sp:'n',sub:['Вор','Убийца','Мистический ловкач'],f:`1|Скрытая атака|Лишний урон при преимуществе или союзнике рядом
+1|Воровской жаргон|Тайный язык воров
+1|Компетентность|Двойное мастерство в двух навыках
+2|Хитрое действие|Бонусным действием Рывок, Отход или Засада|б
+5|Невероятная ловкость|Реакцией вполовину урон от видимой атаки|р
+7|Увёртливость|Спасбросок ЛОВ: половина или ничего
+11|Надёжный талант|Минимум 10 на проверках с мастерством
+14|Слепое зрение|Чувствуете скрытых существ в 10 фт.
+15|Скользкий разум|Владение спасбросками МДР
+18|Неуловимый|Нет преимущества по вам
+20|Удачный случай|Превратить промах в попадание`},
+'Чародей':{hd:6,sv:'25',su:1,ac:'',sp:'f',sub:['Драконья кровь','Дикая магия'],f:`2|Источник магии|Очки чародейства и ячейки обмениваются|б
+3|Метамагия|Изменение заклинаний за очки чародейства
+20|Магическое восстановление|Очки чародейства на коротком отдыхе`},
+'Колдун':{hd:8,sv:'45',su:1,ac:'',sp:'w',sub:['Архифея','Исчадие','Великий древний'],f:`1|Магия договора|Ячейки возвращаются на коротком отдыхе
+2|Воззвания|Магические воззвания
+3|Дар договора|Клинок, цепь или том
+11|Таинство мистическое|Заклинание 6 круга раз в день
+20|Мастер-колдун|Возвращает все ячейки за минуту`},
+'Волшебник':{hd:6,sv:'34',su:2,ac:'',sp:'f',sub:['Школа ограждения','Школа воплощения','Школа вызова','Школа иллюзии','Школа некромантии','Школа очарования','Школа преобразования','Школа прорицания'],f:`1|Книга заклинаний|Ритуалы из книги без ячеек
+1|Восстановление чар|Возврат ячеек на коротком отдыхе
+18|Мастерство заклинаний|Заклинания 1–2 круга без ячеек
+20|Фирменные заклинания|Два заклинания 3 круга раз на отдых`}};
+CLS['Изобретатель [TCE]']={hd:8,sv:'23',su:3,ac:'',sp:'a',sub:['Алхимик','Бронник','Артиллерист','Боевой кузнец'],f:`1|Магическое ремесло|Мелкие магические безделушки
+2|Вливание в предметы|Наделяет предметы магическими свойствами
+3|Нужный инструмент|Создание инструментов за час
+6|Мастер инструментов|Двойное мастерство инструментов
+7|Вспышка гениальности|Реакцией бонус ИНТ к проверке или спасброску|р
+10|Адепт магических предметов|Больше настроенных предметов
+11|Хранилище заклинаний|Предмет хранит заклинание
+14|Знаток магических предметов|Ещё больше настроенных предметов
+18|Мастер магических предметов|Максимум настроенных предметов
+20|Душа творца|Бонус к спасброскам за настройки`};
+CLS['Кровавый охотник [ХБ]']={hd:10,sv:'03',su:3,ac:'',sp:'n',sub:['Орден охотников за призраками','Орден оборотней','Орден мутантов','Орден порочной души'],f:`1|Охотничья погибель|Преимущество на выслеживание и знания о нечисти
+1|Багровый обряд|Усиление оружия кровью, дополнительный урон
+2|Боевой стиль|Выберите боевой стиль
+2|Кровавое проклятие|Проклятие на врагов за кровь охотника
+5|Дополнительная атака|Две атаки за действие Атака`};
+const MORE={'Варвар':['Путь предка-хранителя [XGE]','Путь буревестника [XGE]','Путь фанатика [XGE]','Путь зверя [TCE]','Путь дикой магии [TCE]'],'Бард':['Коллегия очарования [XGE]','Коллегия мечей [XGE]','Коллегия шёпотов [XGE]','Коллегия творения [TCE]','Коллегия красноречия [TCE]'],'Клерик':['Домен кузницы [XGE]','Домен могилы [XGE]','Домен порядка [TCE]','Домен мира [TCE]','Домен сумерек [TCE]'],'Друид':['Круг грёз [XGE]','Круг пастыря [XGE]','Круг спор [TCE]','Круг звёзд [TCE]','Круг дикого огня [TCE]'],'Воин':['Арканный лучник [XGE]','Кавалерист [XGE]','Самурай [XGE]','Псионический воин [TCE]','Рунный рыцарь [TCE]'],'Монах':['Путь долгой смерти [SCAG]','Путь солнечной души [XGE]','Путь пьяного мастера [XGE]','Путь кенсэя [XGE]','Путь милосердия [TCE]','Путь астрального я [TCE]'],'Паладин':['Клятва короны [SCAG]','Клятва завоевания [XGE]','Клятва искупления [XGE]','Клятва славы [TCE]','Клятва стражей [TCE]'],'Следопыт':['Охотник из сумрака [XGE]','Странник горизонта [XGE]','Убийца монстров [XGE]','Странник фей [TCE]','Хранитель роя [TCE]','Укротитель драконов [TCE]'],'Плут':['Дознаватель [XGE]','Разведчик [XGE]','Мастермайнд [XGE]','Дуэлянт-акробат [SCAG]','Фантом [TCE]','Клинок души [TCE]'],'Чародей':['Теневая магия [XGE]','Магия бури [XGE]','Божественная душа [XGE]','Аберрантный разум [TCE]','Заводной механизм [TCE]'],'Колдун':['Небожитель [XGE]','Колдун-клинок [XGE]','Нежить [TCE]','Джинн [TCE]','Бездонный [TCE]'],'Волшебник':['Магия войны [XGE]','Орден писцов [TCE]','Хронургия [EGW]','Гравитургия [EGW]']};
+Object.entries(MORE).forEach(([k,v])=>CLS[k].sub.push(...v));
+CLS['Мистик [UA]']={hd:8,sv:'',su:1,ac:'',sp:'n',sub:[],f:`1|Особенности класса|Заполните вручную по вашей версии класса`};
+CLS['Пистолетчик [ХБ]']={hd:10,sv:'',su:3,ac:'',sp:'n',sub:[],f:`1|Особенности класса|Заполните вручную по вашей версии класса`};
+CLS['Иллригер [MCDM]']={hd:10,sv:'',su:3,ac:'',sp:'n',sub:[],f:`1|Особенности класса|Заполните вручную по вашей версии класса`};
+const MORE2={'Варвар':['Путь буйного бойца [SCAG]','Путь великана [UA]'],'Бард':['Коллегия духов [VRGR]'],'Клерик':['Домен магии [SCAG]','Домен смерти [DMG]'],'Воин':['Знаменосец [SCAG]','Рыцарь-эхо [EGW]'],'Монах':['Путь восходящего дракона [FTD]'],'Паладин':['Клятвопреступник [DMG]'],'Чародей':['Лунная магия [DSotDQ]'],'Колдун':['Бессмертный [SCAG]'],'Волшебник':['Песнь клинка [SCAG]']};
+Object.entries(MORE2).forEach(([k,v])=>CLS[k].sub.push(...v));
+const FS={'Стрельба':'+2 к броскам дальних атак','Оборона':'+1 к КД в доспехах','Дуэлянт':'+2 к урону одним оружием в одной руке','Большое оружие':'Переброс 1 и 2 на костях урона двуручным оружием','Защитник':'Реакцией помеха на атаку по союзнику рядом','Два оружия':'Модификатор в урон второй рукой'};
+Object.assign(FS,{'Слепой бой [TCE]':'Чувство слепого зрения на 10 фт.','Благословенный воин [TCE]':'Два заговора клерика','Друидический воин [TCE]':'Два заговора друида','Перехват [TCE]':'Реакцией снижает урон союзнику рядом','Превосходная техника [TCE]':'Один приём Мастера боевых искусств','Метательное оружие [TCE]':'+2 к урону метательным оружием','Безоружный бой [TCE]':'Усиленные безоружные удары и урон при захвате'});
+const RACE={};`Горный дварф|25 фт.|Тёмное зрение: видит в темноте на 60 фт.; Дварфийская стойкость: преимущество на спасброски от яда; Знание камня: двойное мастерство по истории камня; Владение доспехами: лёгкие и средние
+Холмовой дварф|25 фт.|Тёмное зрение: видит в темноте на 60 фт.; Дварфийская стойкость: преимущество на спасброски от яда; Знание камня: двойное мастерство по истории камня; Дварфийская крепость: +1 хит за уровень
+Высший эльф|30 фт.|Тёмное зрение: 60 фт.; Обострённые чувства: владение Внимательностью; Наследие фей: преимущество против очарования; Транс: 4 часа вместо сна; Заговор волшебника: один заговор
+Лесной эльф|35 фт.|Тёмное зрение: 60 фт.; Обострённые чувства: владение Внимательностью; Наследие фей: преимущество против очарования; Транс: 4 часа вместо сна; Маска дикой природы: можно прятаться в лёгкой природной защите
+Тёмный эльф (дроу)|30 фт.|Превосходное тёмное зрение: 120 фт.; Обострённые чувства: владение Внимательностью; Наследие фей: преимущество против очарования; Чувствительность к солнцу: помеха на ярком свету; Магия дроу: врождённые заклинания
+Легконогий полурослик|25 фт.|Удачливый: переброс 1 на к20; Храбрый: преимущество против страха; Проворство полуросликов: проход через крупных; Природная скрытность: прятаться за крупным существом
+Коренастый полурослик|25 фт.|Удачливый: переброс 1 на к20; Храбрый: преимущество против страха; Проворство полуросликов: проход через крупных; Стойкость коренастых: преимущество против яда
+Человек|30 фт.|Универсальность: +1 ко всем характеристикам
+Человек (вариант)|30 фт.|Универсальность: +1 к двум характеристикам; Навык: владение одним навыком; Черта: одна черта на выбор
+Драконорождённый|30 фт.|Драконье наследие: цвет определяет тип урона; Оружие дыхания: область урона по наследию; Сопротивление урону: по цвету предка
+Лесной гном|25 фт.|Тёмное зрение: 60 фт.; Гномья хитрость: преимущество на спасброски ИНТ, МДР, ХАР против магии; Природный иллюзионист: заговор Малая иллюзия
+Скальный гном|25 фт.|Тёмное зрение: 60 фт.; Гномья хитрость: преимущество на спасброски ИНТ, МДР, ХАР против магии; Знание ремесленника: двойное мастерство по истории предметов
+Полуэльф|30 фт.|Тёмное зрение: 60 фт.; Наследие фей: преимущество против очарования; Универсальность навыков: два навыка на выбор
+Полуорк|30 фт.|Тёмное зрение: 60 фт.; Угрожающий: владение Запугиванием; Непоколебимая стойкость: раз на отдых остаться на 1 хите; Свирепые атаки: лишняя кость урона на крите
+Тифлинг|30 фт.|Тёмное зрение: 60 фт.; Сопротивление огню; Инфернальное наследие: врождённые заклинания`.split('\n').forEach(l=>{const[n,sp,t]=l.split('|');RACE[n]={spd:sp,t}});
+const BG={};`Прислужник|13,14|Приют верующих
+Шарлатан|11,8|Ложная личность
+Преступник|11,15|Криминальные связи
+Артист|0,5|По многочисленным просьбам
+Народный герой|17,4|Приют простого люда
+Гильдейский ремесленник|13,16|Членство в гильдии
+Отшельник|10,14|Открытие
+Благородный|7,16|Положение в обществе
+Чужеземец|2,4|Странник
+Мудрец|9,7|Исследователь
+Моряк|2,3|Морской проезд
+Солдат|2,6|Воинское звание
+Беспризорник|8,15|Городские тайны`.split('\n').forEach(l=>{const[n,k,f]=l.split('|');BG[n]={sk:k.split(',').map(Number),f}});
+const addRaces=t=>t.split('\n').forEach(l=>{const[n,sp,x]=l.split('|');RACE[n]={spd:sp,t:x}});
+addRaces(`Аазимар [VGM]|30 фт.|Тёмное зрение: 60 фт.; Небесное сопротивление: некротика и излучение; Целительные руки: лечение раз за отдых; Свет: заговор Свет
+Файрболг [VGM]|30 фт.|Магия файрболга: Обнаружение магии и Маскировка; Скрытый шаг: невидимость бонусным действием; Могучее сложение; Речь зверей и листвы
+Голиаф [VGM]|30 фт.|Природный атлет: владение Атлетикой; Каменная стойкость: реакцией снизить урон; Могучее сложение; Горная акклиматизация
+Кенку [VGM]|30 фт.|Опытный подделыватель: преимущество при подделке; Обучение кенку: два навыка; Подражание: копирует услышанные звуки
+Табакси [VGM]|30 фт.|Тёмное зрение: 60 фт.; Кошачье проворство: двойная скорость рывком; Кошачьи когти: лазание и когти; Кошачий талант: Внимательность и Скрытность
+Тритон [VGM]|30 фт.|Земноводный: дышит воздухом и водой; Управление воздухом и водой: врождённые заклинания; Страж глубин: сопротивление холоду; Эмиссар моря: общение с морскими существами
+Ящеролюд [VGM]|30 фт.|Укус: естественное оружие; Мастер-ремесленник: изготовление из трофеев; Задержка дыхания: 15 минут; Охотничья мудрость: два навыка; Природная броня: КД 13 + ЛОВ
+Бугбир [VGM]|30 фт.|Тёмное зрение: 60 фт.; Длинные конечности: досягаемость +5 фт.; Могучее сложение; Скрытность: владение Скрытностью; Внезапная атака: лишний урон
+Гоблин [VGM]|30 фт.|Тёмное зрение: 60 фт.; Ярость малых: лишний урон по крупным; Проворный побег: Отход или Засада бонусным действием
+Хобгоблин [VGM]|30 фт.|Тёмное зрение: 60 фт.; Воинское обучение: оружие и лёгкие доспехи; Сохранение лица: бонус к проваленной проверке
+Кобольд [VGM]|30 фт.|Тёмное зрение: 60 фт.; Тактика стаи: преимущество с союзником; Чувствительность к солнцу; Унижение: преимущество на Обман
+Йуан-ти чистокровный [VGM]|30 фт.|Тёмное зрение: 60 фт.; Врождённое колдовство: заклинания; Сопротивление магии: преимущество на спасброски; Иммунитет к яду
+Аарокра [EEPC]|25 фт., полёт 50 фт.|Полёт: скорость полёта 50 фт.; Когти: естественное оружие; Язык аарокра: аарокра и ауран
+Дженази воздуха [EEPC]|30 фт.|Нескончаемое дыхание: задержка дыхания; Смешение с ветром: заклинание Левитация
+Дженази земли [EEPC]|30 фт.|Хождение по земле: игнорирует трудную местность из камня и земли; Слияние с камнем: заклинание Прохождение сквозь камень
+Дженази огня [EEPC]|30 фт.|Тёмное зрение: 60 фт.; Сопротивление огню; Достучаться до огня: огненные заклинания
+Дженази воды [EEPC]|30 фт.|Сопротивление кислоте; Земноводный: дышит воздухом и водой; Плавание: 30 фт.; Зов волн: водные заклинания
+Дуэргар [SCAG]|25 фт.|Превосходное тёмное зрение: 120 фт.; Стойкость дуэргаров: преимущество против яда и иллюзий; Магия дуэргаров: Увеличение и Невидимость; Чувствительность к солнцу
+Эладрин [MTF]|30 фт.|Тёмное зрение: 60 фт.; Наследие фей: преимущество против очарования; Транс: 4 часа вместо сна; Феинский шаг: телепортация на 30 фт.
+Морской эльф [MTF]|30 фт.|Тёмное зрение: 60 фт.; Наследие фей: преимущество против очарования; Дитя моря: плавание и дыхание под водой; Дружба с морской жизнью
+Шади-кай [MTF]|30 фт.|Тёмное зрение: 60 фт.; Наследие фей: преимущество против очарования; Благословение Ворона-королевы: телепортация и сопротивление
+Гитьянки [MTF]|30 фт.|Образование гитьянки: оружие и навык; Пси-способности гитьянки: врождённые заклинания
+Гитцераи [MTF]|30 фт.|Монастырское образование: навык; Психическая защита: КД + МДР без доспехов; Пси-способности гитцераи: врождённые заклинания
+Шифтер [ERLW]|30 фт.|Тёмное зрение: 60 фт.; Смена облика: звериные черты бонусным действием
+Чейнджлинг [ERLW]|30 фт.|Смена облика: принимает чужой облик; Инстинкты чейнджлинга: два навыка
+Кованый [ERLW]|30 фт.|Выносливость конструкта: сопротивление яду; Сон часового: отдых без сна; Встроенная защита: бонус к КД; Специализированный дизайн: навык и инструмент`);
+const addBG=t=>t.split('\n').forEach(l=>{const[n,k,f]=l.split('|');BG[n]={sk:k.split(',').map(Number),f}});
+addBG(`Городской страж [SCAG]|2,13|Бдительность стража
+Клановый ремесленник [SCAG]|7,13|Уважение дварфов
+Придворный [SCAG]|13,16|Придворные связи
+Наёмник-ветеран [SCAG]|2,16|Положение наёмника
+Дальний путешественник [SCAG]|13,3|Все взгляды на вас
+Член племени утгардтов [SCAG]|2,4|Наследие утгардтов`);
+addRaces(`Вейдалкен [GGR]|30 фт.|Бесстрастие вейдалкена: преимущество на спасброски ИНТ, МДР, ХАР; Неутомимая точность: к20 + к4 к проверке с владением; Частичная амфибия: дыхание под водой
+Симик-гибрид [GGR]|30 фт.|Животные улучшения: выбор усилений; Адаптация: изменение со временем
+Локсодон [GGR]|30 фт.|Могучее сложение; Безмятежность локсодона: преимущество против очарования и страха; Природная броня; Хобот; Тонкий нюх
+Минотавр [GGR]|30 фт.|Рога: естественное оружие; Яростный натиск: рывок с ударом; Охотничий инстинкт: выслеживание; Ищейка лабиринтов
+Центавр [GGR]|40 фт.|Тип фея; Рывок: удар после разгона; Копыта: естественное оружие; Лошадиное сложение; Выживальщик
+Сатир [MOT]|35 фт.|Тип фея; Овен: удар головой; Сопротивление магии: преимущество на спасброски; Весельчак: владение Выступлением; Прыжки
+Леонин [MOT]|35 фт.|Тёмное зрение: 60 фт.; Когти: естественное оружие; Охотничье рычание; Запугивающее присутствие
+Фея [WBTW]|30 фт., полёт 30 фт.|Тип фея; Полёт: скорость полёта 30 фт.; Магия фей: заклинания
+Харенгон [WBTW]|30 фт.|Кроличья реакция: бонус к инициативе; Счастливый прыжок: бросок к20 с бонусом; Лунное чутьё
+Оулин [SCC]|30 фт., полёт 30 фт.|Полёт: скорость полёта 30 фт.; Тёмное зрение: 120 фт.; Бесшумный полёт: помеха для слуха врагов
+Дампир [VRGR]|30 фт.|Укус вампира: восстановление хитов; Паучье лазание; Сопротивление проклятиям
+Хексблуд [VRGR]|30 фт.|Проклятие карги: помеха врагам; Магия ведьмы: врождённые заклинания; Глаз ведьмы
+Возрождённый [VRGR]|30 фт.|Знание прошлой жизни: преимущество на спасброски от яда; Тело мертвеца; Дух жизни
+Калаштар [ERLW]|30 фт.|Двойной разум: преимущество на спасброски МДР; Психическая дисциплина: сопротивление психическому; Связь разумов; Оторванность от снов
+Тортл [TTP]|30 фт.|Когти: естественное оружие; Задержка дыхания: 1 час; Природная броня: КД 17; Защита панциря; Инстинкт выживания
+Автогном [AAG]|30 фт.|Броня корпуса: КД 13 + ЛОВ; Созданный для успеха: бонус к проверкам; Механическая природа: сопротивление яду; Сон часового
+Гифф [AAG]|30 фт.|Астральная искра: психический урон; Мастерство огнестрельного оружия; Сложение гиппопотама
+Хадози [AAG]|30 фт.|Ловкие руки; Планирование: плавное падение; Стойкость хадози
+Плазмоид [AAG]|30 фт.|Аморфность; Задержка дыхания: 1 час; Природная стойкость; Изменение формы; Тёмное зрение: 60 фт.
+Три-крин [AAG]|30 фт.|Хамелеонов покров: помеха на атаки по вам; Дополнительные руки; Нет сна; Телепатия три-крин
+Астральный эльф [AAG]|30 фт.|Тёмное зрение: 60 фт.; Астральный огонь: заговор; Звёздный шаг: телепортация; Астральный транс
+Грунг [ToA]|25 фт.|Земноводный; Яд: иммунитет и ядовитая кожа; Прыжок с места; Привязка к воде; Древесная бдительность
+Свирфнеблин [SCAG]|25 фт.|Превосходное тёмное зрение: 120 фт.; Гномья хитрость; Каменный камуфляж: преимущество на Скрытность
+Хроматический драконорождённый [FTD]|30 фт.|Хроматическое оружие дыхания; Хроматическое сопротивление; Хроматическая атака
+Металлический драконорождённый [FTD]|30 фт.|Металлическое оружие дыхания; Металлическое сопротивление; Металлическая атака
+Самоцветный драконорождённый [FTD]|30 фт.|Самоцветное оружие дыхания; Самоцветное сопротивление; Самоцветный полёт
+Гнолл [MPMM]|30 фт.|Укус ярости: бонусный укус; Бег гиены: рывок после убийства; Тёмное зрение: 60 фт.
+Китсунэ [ХБ]|30 фт.|Подражание лисы: смена облика; Сообразительность: преимущество на проверки Обмана и Ловкости рук; Лисья магия (примерно, сверьте с вашей версией)
+Рэтфолк [ХБ]|25 фт.|Тёмное зрение: 60 фт.; Тактика стаи: преимущество с союзником; Мелкое тело; Чутьё на ловушки (примерно, сверьте с вашей версией)
+Нага [ХБ]|30 фт.|Змеиное тело; Ядовитый укус; Устойчивость к яду (примерно, сверьте с вашей версией)`);
+addBG(`Чиновник Азориуса [GGR]|13,6|Власть закона
+Ветеран легиона Борос [GGR]|2,6|Жетон легиона
+Агент Диммира [GGR]|11,15|Тайная сеть
+Агент Голгари [GGR]|12,4|Подземные ходы
+Анархист Груул [GGR]|2,4|Дикие связи
+Инженер Иззет [GGR]|9,1|Мастерская гильдии
+Посвящённый Селесньи [GGR]|12,16|Круг Селесньи
+Представитель Орзова [GGR]|6,14|Финансовая власть
+Культист Ракдоса [GGR]|0,5|Лицо ракдоса
+Учёный Симик [GGR]|9,10|Доступ в лабораторию
+Антрополог [ToA]|13,14|Знаток культур
+Археолог [ToA]|7,4|Знаток развалин
+Следователь [SCAG]|13,1|Чутьё сыщика
+Потерянный феями [WBTW]|11,4|Эхо Страны фей
+Рука Витчлайта [WBTW]|5,8|Закулисные связи`);
+const FEATS=['Актёр','Бдительный','Атлет','Нападающий','Эксперт по арбалетам','Защитный дуэлянт','Боец с двумя оружиями','Исследователь подземелий','Стойкий','Мастер стихий','Борец','Мастер большого оружия','Целитель','Тяжёлая броня','Вдохновляющий лидер','Острый ум','Лёгкая броня','Лингвист','Везунчик','Убийца магов','Магическое посвящение','Воинский адепт','Мастер средней брони','Подвижный','Средняя броня','Конный боец','Наблюдательный','Мастер древкового оружия','Выносливый','Ритуальный заклинатель','Свирепый атакующий','Страж','Меткий стрелок','Мастер щитов','Умелец','Скрытник','Снайпер заклинаний','Трактирный драчун','Крепкий','Боевой заклинатель','Мастер оружия'];
+FEATS.push('Щедрая удача [XGE]','Драконий ужас [XGE]','Драконья шкура [XGE]','Дварфийская стойкость [XGE]','Эльфийская меткость [XGE]','Исчезновение [XGE]','Феинское перемещение [XGE]','Пламя Флегетона [XGE]','Инфернальное сложение [XGE]','Орочья ярость [XGE]','Вундеркинд [XGE]','Второй шанс [XGE]','Ловкий коротышка [XGE]','Магия лесного эльфа [XGE]','Посвящённый изобретателя [TCE]','Повар [TCE]','Дробитель [TCE]','Мистический адепт [TCE]','Тронутый феями [TCE]','Боевой посвящённый [TCE]','Адепт метамагии [TCE]','Пронзатель [TCE]','Отравитель [TCE]','Тронутый тенью [TCE]','Эксперт навыков [TCE]','Рубака [TCE]','Телекинетик [TCE]','Телепат [TCE]');
+FEATS.push('Дар хроматического дракона [FTD]','Дар металлического дракона [FTD]','Дар самоцветного дракона [FTD]','Магия свирфнеблинов [XGE]','Новичок Стриксхейвена [SCC]');
+const ALIGN=['Законно-добрый','Нейтрально-добрый','Хаотично-добрый','Законно-нейтральный','Истинно нейтральный','Хаотично-нейтральный','Законно-злой','Нейтрально-злой','Хаотично-злой'];
+const FULL=['2','3','42','43','432','433','4331','4332','43331','43332','433321','433321','4333211','4333211','43332111','43332111','433321111','433331111','433332111','433332211'];
+const ART=['2','2','3','3','42','42','43','43','432','432','433','433','4331','4331','4332','4332','43331','43331','43332','43332'];
+const HALF=['','2','3','3','42','42','43','43','432','432','433','433','4331','4331','4332','4332','43331','43331','43332','43332'];
+function slots(t,L){if(t==='a')return ART[L-1].split('').map(Number);if(t==='f')return FULL[L-1].split('').map(Number);if(t==='h')return(HALF[L-1]||'').split('').map(Number);
+  if(t==='w'){const r=Array(9).fill(0);r[Math.min(5,Math.ceil(L/2))-1]=L<2?1:L<11?2:L<17?3:4;return r}return[]}
+function sheetEd(h){const a=h.ab||[],sv=h.sv||[],sk=h.sk||[];
+  const sel=(i,l,o,v,e)=>`<label>${l}<select id="h-${i}" onchange="calc('${i}')">${e?'':'<option value="">—</option>'}${o.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('')}</select></label>`;
+  const num=(i,l,v)=>`<label>${l}<input type="number" id="h-${i}" value="${esc(v??'')}"></label>`;
+  return '<h4>Лист персонажа</h4><div class="mut">Выберите класс, уровень, расу и предысторию: КД, скорость, хиты, спасброски, ячейки и способности заполнятся сами.</div><div class="r2" style="grid-template-columns:1fr 1fr">'
+  +sel('cls','Класс',Object.keys(CLS),h.cls)+sel('sub','Подкласс',(CLS[h.cls]||{sub:[]}).sub,h.sub)+sel('lvl','Уровень',[...Array(20)].map((_,i)=>String(i+1)),String(h.lvl||1),1)
+  +sel('race','Раса',Object.keys(RACE),h.race)+sel('bg','Предыстория',Object.keys(BG),h.bg)+sel('al','Мировоззрение',ALIGN,h.al)
+  +'</div>'
+  +'<div class="r2" style="grid-template-columns:repeat(3,1fr)">'+num('ac','КД',h.ac)+`<label>Скорость<input type="text" id="h-spd" value="${esc(h.spd||'')}"></label><label>Кость хитов<input type="text" id="h-hd" value="${esc(h.hd||'')}"></label>`+num('hp','Хиты',h.hp)+num('hpm','Макс. хиты',h.hpm)+num('hpt','Врем. хиты',h.hpt)
+  +'</div><div class="mut">Характеристики (итоговые) и владение спасброском</div><div class="r2" style="grid-template-columns:repeat(3,1fr)">'+AB.map((n,i)=>`<label>${n}<input type="number" id="h-a${i}" value="${a[i]??10}" oninput="calc('ab')"><span style="display:flex;gap:3px;align-items:center"><input type="checkbox" id="h-s${i}" onchange="modUI()" ${sv[i]?'checked':''}>спас. владение</span><span class="mut">мод <b id="h-m${i}"></b> · спас <b id="h-v${i}"></b></span></label>`).join('')
+  +'</div><div class="mut">Владение навыками</div><div class="r2" style="grid-template-columns:1fr 1fr">'+SK.map(([n],i)=>`<label style="display:flex;gap:4px;align-items:center;margin:0"><input type="checkbox" id="h-k${i}" ${sk[i]?'checked':''}>${n}</label>`).join('')+'</div><div class="mut" style="margin-top:6px">Черты и боевой стиль</div><div class="r2" style="grid-template-columns:1fr 1fr">'+sel('feat','Черта 1',FEATS,h.feat)+sel('feat2','Черта 2',FEATS,h.feat2)+sel('fs','Боевой стиль',Object.keys(FS),h.fs)+'</div>'}
+function readSheet(){const g=i=>$('h-'+i).value;return{cls:g('cls'),sub:g('sub'),race:g('race'),bg:g('bg'),al:g('al'),feat:g('feat'),feat2:g('feat2'),fs:g('fs'),hd:g('hd'),spd:g('spd'),lvl:n0(g('lvl'))||1,ac:n0(g('ac')),hp:n0(g('hp')),hpm:n0(g('hpm')),hpt:n0(g('hpt')),
+  ab:AB.map((_,i)=>n0(g('a'+i))||10),sv:AB.map((_,i)=>$('h-s'+i).checked?1:0),sk:SK.map((_,i)=>$('h-k'+i).checked?1:0)}}
+function calc(src){const g=i=>$('h-'+i),v=i=>g(i).value,c=CLS[v('cls')],L=+v('lvl')||1,a=AB.map((_,i)=>+$('h-a'+i).value||10),r=RACE[v('race')],b=BG[v('bg')];
+  if(src==='cls')g('sub').innerHTML='<option value="">—</option>'+(c?c.sub:[]).map(x=>`<option>${esc(x)}</option>`).join('');
+  if(c&&(src==='cls'||src==='lvl'||src==='ab')){g('hd').value=L+'к'+c.hd;g('hpm').value=Math.max(L,c.hd+(Math.floor(c.hd/2)+1)*(L-1)+md(a[2])*L);if(!+v('hp')||src!=='ab')g('hp').value=g('hpm').value}
+  if(c&&src==='cls')AB.forEach((_,i)=>$('h-s'+i).checked=c.sv.includes(i));
+  if(src==='cls'||src==='ab')g('ac').value=10+md(a[1])+(c&&c.ac==='bar'?md(a[2]):c&&c.ac==='mon'?md(a[4]):0);
+  if(r&&src==='race')g('spd').value=r.spd;
+  if(b&&src==='bg')b.sk.forEach(i=>$('h-k'+i).checked=true);
+  if(c&&(src==='cls'||src==='lvl')){const t=slots(c.sp,L);for(let i=0;i<9;i++){$('sm'+i).value=t[i]||0;$('sl'+i).value=t[i]||0}}
+  fillAuto();modUI();autoSave()}
+function fillAuto(){const box=$('s-abil');if(!box)return;const c=CLS[$('h-cls').value],L=+$('h-lvl').value||1,r=RACE[$('h-race').value],b=BG[$('h-bg').value],fs=$('h-fs').value,sb=$('h-sub').value,it=[];
+  box.querySelectorAll('.rw[data-s]').forEach(x=>x.remove());
+  if(c){c.f.split('\n').forEach(l=>{const[lv,n,d,t]=l.split('|');if(+lv>L)return;
+    if(n==='Боевой стиль'&&fs)it.push({n:'Боевой стиль: '+fs,v:FS[fs]});else it.push({n,v:d,act:{'б':'бд','д':'д','р':'р'}[t]||''})});
+    if(sb&&L>=c.su)it.push({n:'Подкласс: '+sb,v:'Особенности подкласса по правилам'})}
+  if(r&&r.t)r.t.split('; ').forEach(t=>{const k=t.indexOf(': ');it.push(k<0?{n:t,v:''}:{n:t.slice(0,k),v:t.slice(k+2)})});
+  if(b)it.push({n:b.f,v:'Особенность предыстории'});
+  it.forEach(i=>box.insertAdjacentHTML('beforeend',row('abil',{...i,src:1,u:0,m:0},1)))}
+const STD={a:['Атака','Накладывание заклинания','Рывок','Отход','Уклонение','Помощь','Засада','Поиск','Использование предмета','Подготовка действия','Захват','Толчок'],b:['Бой двумя оружиями (вторая атака)']};
+const acs=d=>d.acn===trn().n?(d.ac||{}):{};
+function turnPanel(open){const me=myId;if(!me||!S.players[me])return'';const d=S.players[me],ac=acs(d),mine=trn().id===me,st=(S.stats[me]||{}).sec||{};
+  const nm=k=>['',...(STD[k]||[]),...(st.abil||[]).filter(i=>actKey(i)===k).map(i=>i.n),...(st.spells||[]).filter(i=>actKey(i,1)===k).map(i=>i.n)];
+  return `<details class="tpn"${open?' open':''}><summary>${mine?'▶ Ваш ход: действия':'Действия (сейчас не ваш ход)'}</summary>`+['a','b'].map(k=>`<div class="tr"><select id="ta-${k}">${nm(k).map(o=>`<option value="${esc(o)}">${o?esc(o):'—'}</option>`).join('')}</select><button${ac[k]?'':' class="on"'} onclick="doAct('${k}')">${AL[k]}${ac[k]?' ✕':' ✓'}</button></div>`).join('')+(mine?'<div class="tr"><span class="mut">Закончили ход?</span><button class="on" onclick="endTurn()">ОК</button></div>':'')+'</details>'}
+function renderTP(){const el=$('tp'),op=el.querySelector('details')&&el.querySelector('details').open,o={};el.querySelectorAll('select').forEach(x=>o[x.id]=x.value);el.innerHTML=turnPanel(op);Object.entries(o).forEach(([k,v])=>{const x=$(k);if(x)x.value=v})}
+function doAct(k){const v=$('ta-'+k).value;if(!v)return;const d=clone(S.players[myId]),ac=acs(d);
+  if(trn().id!==myId){toast('Сейчас не ваш ход');return}
+  if(ac[k]){toast('Уже потрачено: '+AL[k]);return}
+  ac[k]=1;d.ac=ac;d.acn=trn().n;if(v==='Рывок')d.dsh=trn().n;put('players',myId,d);toast(AL[k]+': '+v)}
+function endTurn(){const o=ord(),t=trn();if(t.id!==myId||!o.length)return;const i=o.findIndex(p=>p.id===t.id),nx=o[(i+1)%o.length];put('turn','cur',{id:nx.id,n:(t.n||0)+1});toast('Ход окончен. Далее: '+nx.name)}
+function autoSave(){autoSave.p=1;clearTimeout(autoSave.h);autoSave.h=setTimeout(flushAuto,700)}
+function flushAuto(){if(!ed||!autoSave.p)return;autoSave.p=0;clearTimeout(autoSave.h);if(ed==='tok')saveE(1);else if(ed==='item')saveItem(1)}
+$('sh').addEventListener('input',()=>{if(ed)autoSave()});$('sh').addEventListener('change',()=>{if(ed)autoSave()});
+function modUI(){const P=pb(+$('h-lvl').value||1);AB.forEach((_,i)=>{const m=md(+$('h-a'+i).value||10);$('h-m'+i).textContent=sg(m);$('h-v'+i).textContent=sg(m+($('h-s'+i).checked?P:0))})}
+function rowFull(btn){const i=btn.closest('.pr').querySelectorAll('input[type=text]'),a=i[0],b=i[1],f=$('fx');
+  f.innerHTML='<div class="sh"><h3>Полный текст</h3><label>Название<textarea id="fx-a" rows="2"></textarea></label><label>Описание<textarea id="fx-b" rows="10"></textarea></label><div class="btns"><button class="on" onclick="closeFx()">Готово</button></div></div>';
+  $('fx-a').value=a.value;$('fx-b').value=b.value;
+  [['fx-a',a],['fx-b',b]].forEach(([id,t])=>$(id).oninput=e=>{t.value=e.target.value;t.dispatchEvent(new Event('input',{bubbles:true}))});f.classList.add('show')}
+const closeFx=()=>$('fx').classList.remove('show');
+function fullView(el){const f=$('fx');f.innerHTML=`<div class="sh"><h3>${esc(el.dataset.n)}</h3><div style="white-space:pre-wrap">${esc(el.dataset.v)||'<span class="mut">Нет описания</span>'}</div><div class="btns"><button class="on" onclick="closeFx()">Закрыть</button></div></div>`;f.classList.add('show')}
+function ask(t){return new Promise(r=>{const f=$('fx');f.innerHTML=`<div class="sh"><h3>${esc(t)}</h3><div class="btns"><button class="on" id="ask-y">Да</button><button id="ask-n">Нет</button></div></div>`;f.classList.add('show');$('ask-y').onclick=()=>{closeFx();r(true)};$('ask-n').onclick=()=>{closeFx();r(false)}})}
+const rq={};
+function rosterQ(id){clearTimeout(rq[id]);rq[id]=setTimeout(()=>syncRoster(id),900)}
+async function syncRoster(id){const t=S.players[id],st=S.stats[id];if(!t||t.test||!st||!db)return;const d={name:t.name,emoji:t.emoji||'',color:t.color||'',st:clone(st),upd:Date.now()};S.roster[id]=d;try{await db.doc('roster/'+id).set(d)}catch(e){}}
+function restoreStats(){if(!isOwner||!db||clearing||!LD.stats||!LD.players||!LD.roster)return;
+  for(const id of Object.keys(S.players)){if(S.players[id].test||S.stats[id]||tried[id])continue;const r=S.roster[id];if(r&&r.st){tried[id]=1;put('stats',id,clone(r.st))}}}
+function showRoster(){const L=Object.entries(S.roster).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
+  openS('<h3>База игроков</h3>'+(L.map(([id,r])=>{const h=(r.st||{}).sh||{};return `<div class="dr" onclick="rosterCard('${esc(id)}')"><span class="n">${esc(r.emoji||'')} ${esc(r.name)}</span><span class="mut">${esc([h.cls,h.lvl&&h.lvl+' ур.'].filter(Boolean).join(' '))}${S.players[id]?' · на доске':''}</span></div>`}).join('')||'<p class="mut">Пока пусто. Здесь навсегда сохраняется всё, что вы заполнили для игроков (тест-игроки не считаются).</p>')+'<div class="btns"><button onclick="closeS()">Закрыть</button></div>')}
+function rosterCard(id){const r=S.roster[id];if(!r)return;const st=r.st||{},pub=st.sec||{};
+  let h=`<h3>${esc(r.emoji||'')} ${esc(r.name)}${st.ini!=null?` <span class="mut">· иниц. ${st.ini}</span>`:''}</h3>`+sheetHTML(st.sh);
+  secs('players').forEach(k=>{const L=pub[k]||[];if(L.length)h+=`<h4>${SEC[k]}</h4>`+L.map(i=>`<div class="kv" data-n="${esc(i.n)}" data-v="${esc(i.v)}" onclick="fullView(this)"><span>${esc(i.n)}</span><b>${esc(i.v)}</b></div>`).join('')});
+  openS(h+`<div class="btns">${S.players[id]?'':`<button class="on" onclick="restoreTok('${esc(id)}')">Вернуть на доску</button>`}<button onclick="delRoster('${esc(id)}')">Удалить из базы</button><button onclick="showRoster()">Назад</button></div>`)}
+function restoreTok(id){const r=S.roster[id];if(!r)return;let c=null;const occ=new Set(all().map(q=>q.x+','+q.y));
+  for(let y=0;y<cfg.h&&!c;y++)for(let x=0;x<cfg.w;x++)if(isOn(x,y)&&!occ.has(x+','+y)){c=[x,y];break}
+  if(!c){toast('Нет свободных клеток');return}
+  tried[id]=1;put('players',id,{name:r.name,emoji:r.emoji,color:r.color,x:c[0],y:c[1]});put('stats',id,clone(r.st));closeS();toast('Возвращён на доску: '+r.name)}
+async function delRoster(id){if(!await ask('Удалить из базы навсегда?'))return;delete S.roster[id];if(db){try{await db.doc('roster/'+id).delete()}catch(e){}}showRoster()}
+async function clearBoard(){if(!await ask('Очистить доску: убрать все фишки и предметы? Данные игроков останутся в базе.'))return;
+  clearing=true;for(const id of Object.keys(S.players))await syncRoster(id);
+  for(const c of ['pieces','items','players','stats','secrets']){for(const id of Object.keys(S[c])){if(db){try{await db.doc(c+'/'+id).delete()}catch(e){}}}S[c]={}}
+  S.turn={};if(db){try{await db.doc('turn/cur').delete()}catch(e){}}
+  clearing=false;tried={};render();toast('Доска очищена')}
+let seen=null;const unread={};
+const unTot=()=>Object.values(unread).reduce((a,b)=>a+b,0),un=k=>unread[k]?' ('+unread[k]+')':'';
+const lrGet=()=>{try{return JSON.parse(localStorage.getItem('bd_lr')||'{}')}catch(e){return{}}};
+const lrSet=k=>{try{const o=lrGet();o[k]=Date.now();localStorage.setItem('bd_lr',JSON.stringify(o))}catch(e){}};
+function chatNotify(){const me=myId||'demo',ms=Object.entries(S.chat),mine=m=>m.from!==me&&(m.to==='all'||m.to===me),key=m=>m.to==='all'?'all':m.from;
+  if(!seen){seen=new Set(ms.map(([id])=>id));const lr=lrGet();if(lr.all===undefined)lrSet('all');
+    ms.forEach(([id,m])=>{if(mine(m)&&lr[key(m)]!==undefined&&m.t>lr[key(m)])unread[key(m)]=(unread[key(m)]||0)+1});render();return}
+  ms.forEach(([id,m])=>{if(seen.has(id))return;seen.add(id);if(!mine(m))return;
+    if((chatOpen||menuOn())&&chatTo===key(m))return;
+    unread[key(m)]=(unread[key(m)]||0)+1;toast('💬 '+m.name+': '+m.text);try{navigator.vibrate&&navigator.vibrate(80)}catch(e){}});render()}
+const menuOn=()=>(S.sess.cur||{}).open===false;
+function setSess(o){put('sess','cur',{open:o})}
+async function exitBoard(){if(await ask('Выйти? Все игроки вернутся в главное меню.'))setSess(false)}
+function renderMenu(){const m=$('menu');
+  if(!m.dataset.init){m.dataset.init=1;m.innerHTML='<div id="mtop"></div><h4 style="color:var(--acc);margin:12px 0 4px">Игроки</h4><div id="ml"></div><h4 style="color:var(--acc);margin:12px 0 4px">Чат</h4><div class="pill" id="cp"></div><div id="cm"></div><div class="snd"><input type="text" id="ci" placeholder="Сообщение" onkeydown="if(event.key===\'Enter\')sendM()"><button class="on" onclick="sendM()">➤</button></div>'}
+  $('mtop').innerHTML='<h2 style="margin:6px 0">Главное меню</h2>'+(isOwner?'<div class="bar"><button class="on" onclick="setSess(true)">Открыть доску</button></div>':'<p class="mut">Ведущий вышел с доски. Ожидайте начала.</p>');
+  const ids=[...new Set([...Object.keys(S.players).filter(i=>!S.players[i].test),...(isOwner?Object.keys(S.roster):[])])];
+  $('ml').innerHTML=ids.map(id=>{const t=S.players[id]||S.roster[id]||{},h=((S.stats[id]||(S.roster[id]||{}).st)||{}).sh||{};
+    return `<div class="dr" onclick="menuCard('${esc(id)}')"><span class="n">${esc(t.emoji||'')} ${esc(t.name)}</span><span class="mut">${esc([h.cls,h.lvl&&h.lvl+' ур.',h.ac&&'КД '+h.ac,h.hpm&&'хиты '+(h.hp||0)+'/'+h.hpm].filter(Boolean).join(' · '))}</span></div>`}).join('')||'<span class="mut">Игроков пока нет.</span>'}
+function menuCard(id){S.players[id]?showP('players',id):rosterCard(id)}
+function testMode(){if(testing){testing=null;isOwner=realOwner;myId=realId;tool=null;render();return}
+  const pl=Object.entries(S.players);if(!pl.length){toast('Сначала добавьте игрока: кнопка «＋ Тест-игрок»');return}
+  openS('<h3>Режим игрока</h3><p class="mut">Вы увидите доску и права так, как их видит игрок, и сможете ходить за него.</p><label>Играть за<select id="tg">'+pl.map(([id,d])=>`<option value="${esc(id)}">${esc(d.name)}</option>`).join('')+'</select></label><div class="btns"><button class="on" onclick="startTest()">Начать</button><button onclick="closeS()">Отмена</button></div>')}
+function startTest(){testing=$('tg').value;isOwner=false;myId=testing;tool=null;closeS();render()}
+const itemsAt=(x,y)=>Object.entries(S.items).filter(([,i])=>i.x===x&&i.y===y&&isOn(x,y)).map(([id,i])=>({id,...i}));
+const itemMark=(x,y)=>{const it=itemsAt(x,y);return it.length?`<span class="it">${esc(it[0].emoji||'🎁')}${it.length>1?'+':''}</span>`:''};
+function editItem(id,x,y){const d=id?S.items[id]:{};E={id,x:x??d.x,y:y??d.y};
+  openS(`<h3>${id?'Изменить предмет':'Новый предмет'}<span class="mut" id="svd" style="font-size:12px;font-weight:normal"></span></h3><label>Название<input type="text" id="e-n" value="${esc(d.n)}"></label><div class="r2" style="grid-template-columns:1fr 1fr 1fr"><label>Значок<input type="text" id="e-e" maxlength="2" value="${esc(d.emoji||'🎁')}"></label><label>X<input type="number" id="e-x" min="1" max="${cfg.w}" value="${E.x+1}"></label><label>Y<input type="number" id="e-y" min="1" max="${cfg.h}" value="${E.y+1}"></label></div><label>Описание<textarea id="e-d" rows="5">${esc(d.v)}</textarea></label><div class="btns"><button class="on" onclick="closeS()">Готово</button></div>`);ed='item'}
+function saveItem(auto){const cl=(v,m)=>Math.min(m,Math.max(1,parseInt(v)||1))-1,x=cl($('e-x').value,cfg.w),y=cl($('e-y').value,cfg.h),n=$('e-n').value.trim();if(!n)return;
+  if(!isOn(x,y)){if(!auto)toast('Эта клетка убрана с доски.');return}
+  const id=E.id||'i'+Date.now().toString(36);E.id=id;put('items',id,{n,v:$('e-d').value,emoji:$('e-e').value,x,y});if(auto){const e=$('svd');if(e)e.textContent=' · сохранено ✓'}else{tool=null;closeS()}}
+async function delItem(id){if(!await ask('Удалить предмет?'))return;delete S.items[id];render();if(db){try{await db.doc('items/'+id).delete()}catch(e){}}closeS()}
+function showCell(x,y){openS('<h3>Предметы в клетке</h3>'+itemsAt(x,y).map(i=>`<div class="kv" data-n="${esc(i.n)}" data-v="${esc(i.v)}" onclick="fullView(this)"><span>${esc(i.emoji||'🎁')} ${esc(i.n)}</span><b>${esc(i.v)}</b></div>${isOwner?`<div class="btns" style="margin:2px 0 6px"><button onclick="editItem('${esc(i.id)}')">Изменить</button><button onclick="delItem('${esc(i.id)}')">Удалить</button></div>`:''}`).join('')+'<div class="btns"><button onclick="closeS()">Закрыть</button></div>')}
+render();
+(async()=>{try{
+  const c=window.claude;if(!c||!c.use)return;
+  const [d,u]=await Promise.all([c.use('db'),c.use('user')]);if(!d||!u)return;
+  db=d;demo=false;isOwner=await u.isOwner();myId=await u.id();realOwner=isOwner;realId=myId;
+  try{myName=(await u.me()).name||myName}catch(e){}
+  try{await db.doc('members/'+myId).set({name:myName})}catch(e){}
+  ['board','pieces','players','stats','log','members','chat','items','turn','sess'].forEach(sub);if(isOwner){sub('secrets');sub('roster')}render();
+}catch(e){}})();
+</script></body></html>
